@@ -13,8 +13,9 @@ import RegisterDto from '../dto/requests/register.dto';
 import * as bcrypt from 'bcrypt';
 import { PostgresErrorCode } from '../enum/postgresErrorCode.enum';
 import { JwtService } from '@nestjs/jwt';
-import { expireDuration } from '../../config/jwt-secret';
+import { expireDuration, jwtSecret } from '../../config/jwt-secret';
 import { CreateUserDto } from '../../user/dto/requests/create-user.dto';
+import { RefreshTokenDto } from '../dto/requests/refresh-token.dto';
 
 @Injectable()
 export class AuthService extends BusinessService<User> {
@@ -130,9 +131,42 @@ export class AuthService extends BusinessService<User> {
       type: 'accessToken',
     };
     const token = this.jwtService.sign(payload);
+    const refreshToken = await this.getJwtRefreshToken(user.id);
     return {
-      expires_in: expireDuration,
-      access_token: token,
+      access_token: { token, expiresIn: expireDuration },
+      refresh_token: { refreshToken, expiresIn: '340d' },
+    };
+  }
+
+  async getJwtRefreshToken(userId: number) {
+    const user = await this.userService.findOne(userId);
+    const payload = { userId: user.id, type: 'refreshToken' };
+    const token = this.jwtService.sign(payload, {
+      secret: jwtSecret,
+      expiresIn: '120d',
+    });
+    await this.userService.update(userId, { currentRefreshToken: token });
+    return token;
+  }
+
+  async refreshToken(refreshTokenDto: RefreshTokenDto) {
+    const { refreshToken } = refreshTokenDto;
+    const payload = this.jwtService.verify(refreshToken, { secret: jwtSecret });
+    if (payload.type !== 'refreshToken') {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+    const user = await this.userService.findOne(payload.userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    if (user.currentRefreshToken !== refreshToken) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+    const accessToken = await this.createToken(user.id);
+    const newRefreshToken = await this.getJwtRefreshToken(user.id);
+    return {
+      access_token: accessToken,
+      refresh_token: { newRefreshToken, expiresIn: '340d' },
     };
   }
 }
