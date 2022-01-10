@@ -64,3 +64,14 @@ export class RedisConnection {
     return this.redis;
   }
 }
+
+export const redisConnection = {
+  provide: 'REDIS_CONNECTION',
+  scope: Scope.DEFAULT,
+  useFactory: () =>
+    new RedisConnection().getInstance({
+      host: 'localhost',
+      port: 6379,
+      db: 0,
+    }),
+};
