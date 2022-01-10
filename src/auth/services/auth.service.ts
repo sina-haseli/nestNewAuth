@@ -134,7 +134,7 @@ export class AuthService extends BusinessService<User> {
     };
     const token = this.jwtService.sign(payload);
     await this.redis.set(String(user.id), token);
-    const redis = await this.redis.get(token);
+    const redis = await this.redis.get(String(user.id));
     console.log(redis);
     const refreshToken = await this.getJwtRefreshToken(user.id);
     return {
