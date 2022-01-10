@@ -1,22 +1,20 @@
-import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
-import { Cache } from 'cache-manager';
-
-@Injectable()
-export class RedisService {
-  constructor(@Inject(CACHE_MANAGER) private readonly clientService: Cache) {}
-  async get(key): Promise<any> {
-    return await this.clientService.get(key);
-  }
-
-  async set(key, value) {
-    await this.clientService.set(key, value, 1000);
-  }
-
-  async reset() {
-    await this.clientService.reset();
-  }
-
-  async del(key) {
-    await this.clientService.del(key);
-  }
-}
+// import { Inject, Injectable } from '@nestjs/common';
+// import { RedisClient } from '@nestjs/microservices/external/redis.interface';
+// import { ClientRedis } from '@nestjs/microservices';
+//
+// @Injectable()
+// export class RedisService {
+//   constructor(
+//     @Inject('REDIS-SERVICE') private redisClient: ClientRedis,
+//     @Inject('REDIS-CONNECTION') private clientService: RedisClient,
+//   ) {}
+//
+//   async set(key: string, value: string) {
+//     return this.clientService.set(key, value);
+//   }
+//
+//   async get(key: string) {
+//     return this.clientService.get(key);
+//   }
+//
+// }

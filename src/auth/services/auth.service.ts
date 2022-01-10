@@ -16,7 +16,7 @@ import { JwtService } from '@nestjs/jwt';
 import { expireDuration, jwtSecret } from '../../config/jwt-secret';
 import { CreateUserDto } from '../../user/dto/requests/create-user.dto';
 import { RefreshTokenDto } from '../dto/requests/refresh-token.dto';
-import { RedisService } from '../../redis/redis.service';
+import { RedisClient } from '@nestjs/microservices/external/redis.interface';
 
 @Injectable()
 export class AuthService extends BusinessService<User> {
@@ -24,7 +24,7 @@ export class AuthService extends BusinessService<User> {
     private readonly jwtService: JwtService,
     @Inject(forwardRef(() => UserRepository))
     private userService: UserRepository,
-    private redisService: RedisService,
+    @Inject('REDIS_CONNECTION') private redis: RedisClient,
   ) {
     super(userService);
   }
@@ -119,8 +119,8 @@ export class AuthService extends BusinessService<User> {
   }
 
   async onModuleInit() {
-    await this.redisService.set('test', 'test');
-    const test = await this.redisService.get('test');
+    this.redis.set('test', 'test');
+    const test = this.redis.get('test');
     console.log(test);
   }
 
@@ -139,8 +139,8 @@ export class AuthService extends BusinessService<User> {
       type: 'accessToken',
     };
     const token = this.jwtService.sign(payload);
-    await this.redisService.set(user.id, token);
-    const redis = await this.redisService.get(token);
+    this.redis.set(String(user.id), token);
+    const redis = this.redis.get(token);
     console.log(redis);
     const refreshToken = await this.getJwtRefreshToken(user.id);
     return {

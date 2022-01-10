@@ -1,4 +1,4 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { forwardRef, Module, Scope } from '@nestjs/common';
 import { AuthController } from './controllers/auth.controller';
 import { PassportModule } from '@nestjs/passport';
 import { jwtSecret } from '../config/jwt-secret';
@@ -8,6 +8,7 @@ import { UserRepository } from '../user/repositories/user.repository';
 import { AuthService } from './services/auth.service';
 import { UserModule } from '../user/user.module';
 import { JwtStrategy } from './jwt.strategy';
+import { RedisConnection } from '../config/redis.config';
 
 @Module({
   imports: [
@@ -23,7 +24,20 @@ import { JwtStrategy } from './jwt.strategy';
     forwardRef(() => UserModule),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    {
+      provide: 'REDIS_CONNECTION',
+      scope: Scope.DEFAULT,
+      useFactory: () =>
+        new RedisConnection().getInstance({
+          REDIS_HOST: 'localhost',
+          REDIS_PORT: 6379,
+          REDIS_DB: 0,
+        }),
+    },
+  ],
   exports: [PassportModule, AuthService, JwtStrategy],
 })
 export class AuthModule {}
